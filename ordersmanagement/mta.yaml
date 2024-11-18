@@ -18,7 +18,7 @@ modules:
         name: uaa_ordersmanagement-key
   parameters:
     content:
-      instance:
+      subaccount:
         destinations:
         - Name: ordersmanagement_ordersmanagement_html_repo_host
           ServiceInstanceName: ordersmanagement-html5-app-host-service
@@ -32,12 +32,45 @@ modules:
         existing_destinations_policy: ignore
   build-parameters:
     no-source: true
+- name: ordersmanagement-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: ordersmanagement_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - ordersmgtnspworkflowuimodule.zip
+      name: ordersmgtnspworkflowuimodule
+      target-path: resources/
+- name: ordersmgtnspworkflowuimodule
+  type: html5
+  path: workflow-ui-module
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
 resources:
 - name: ordersmanagement-destination-service
   type: org.cloudfoundry.managed-service
   parameters:
     config:
       HTML5Runtime_enabled: true
+      init_data:
+        subaccount:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
       version: 1.0.0
     service: destination
     service-name: ordersmanagement-destination-service
@@ -55,3 +88,5 @@ resources:
     service: xsuaa
     service-name: ordersmanagement-xsuaa-service
     service-plan: application
+parameters:
+  deploy_mode: html5-repo
